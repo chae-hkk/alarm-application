@@ -32,3 +32,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# 앱 서명 키 / 로컬 설정 (절대 GitHub에 올리면 안 됨)
+keystore.properties

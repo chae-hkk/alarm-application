@@ -1,0 +1,17 @@
+{
+  "name": "move-alarm-android",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "bash .devcontainer/setup-android-sdk.sh",
+  "remoteEnv": {
+    "ANDROID_HOME": "${localEnv:HOME}/android-sdk",
+    "ANDROID_SDK_ROOT": "${localEnv:HOME}/android-sdk"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-gradle",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}
