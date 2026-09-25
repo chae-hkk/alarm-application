@@ -1,4 +1,5 @@
 <resources>
-    <color name="brand_primary">#2E7D32</color>
+    <color name="app_background">#FFF6DE</color>
+    <color name="alarm_background">#2A2013</color>
     <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

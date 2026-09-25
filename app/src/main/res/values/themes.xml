@@ -1,3 +1,10 @@
-<resources>
-    <style name="Theme.MoveAlarm" parent="android:Theme.Material.Light.NoActionBar" />
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.MoveAlarm" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+    </style>
+
+    <style name="Theme.MoveAlarm.Alarm">
+        <item name="android:windowBackground">@color/alarm_background</item>
+    </style>
 </resources>
