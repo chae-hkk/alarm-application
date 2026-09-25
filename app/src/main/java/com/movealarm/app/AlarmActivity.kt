@@ -12,7 +12,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.movealarm.app.alarm.AlarmKind
-import com.movealarm.app.alarm.AlarmNotifier
+import com.movealarm.app.alarm.AlarmRingService
 import com.movealarm.app.alarm.AlarmScheduler
 import com.movealarm.app.ui.AlarmScreen
 import com.movealarm.app.ui.MoveTheme
@@ -45,18 +45,18 @@ class AlarmActivity : ComponentActivity() {
 
     private fun render() {
         val photo = intent.getStringExtra(EXTRA_PHOTO)?.let(::File)?.takeIf { it.exists() }
-        val kind = runCatching { AlarmKind.valueOf(intent.getStringExtra(EXTRA_KIND) ?: "") }.getOrDefault(AlarmKind.HOURLY)
+        val kind = AlarmKind.from(intent.getStringExtra(EXTRA_KIND))
         setContent {
             MoveTheme {
                 AlarmScreen(
                     photo = photo,
                     kind = kind,
                     onConfirm = {
-                        AlarmNotifier.cancel(this)
+                        AlarmRingService.stop(this)
                         finish()
                     },
                     onSnooze = {
-                        AlarmNotifier.cancel(this)
+                        AlarmRingService.stop(this)
                         AlarmScheduler.scheduleSnooze(this)
                         Toast.makeText(this, "5분 뒤에 다시 알려드릴게요", Toast.LENGTH_LONG).show()
                         finish()

@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 14+: 정확한 알람 권한을 가진 앱이 알람을 울리는 동안 쓰는 포그라운드 서비스 유형 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <!-- Android 12: 기본 허용 / Android 13+: 설치 시 자동 허용되는 알람 앱용 권한 -->
     <uses-permission
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
@@ -40,6 +44,11 @@
         <receiver
             android:name=".alarm.AlarmReceiver"
             android:exported="false" />
+
+        <service
+            android:name=".alarm.AlarmRingService"
+            android:exported="false"
+            android:foregroundServiceType="systemExempted" />
 
         <receiver
             android:name=".alarm.BootReceiver"

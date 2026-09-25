@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         )
-        AlarmNotifier.ensureChannel(this)
+        AlarmNotifier.ensureChannels(this)
         setContent {
             MoveTheme {
                 Box(Modifier.fillMaxSize().background(MoveColors.Background)) {
