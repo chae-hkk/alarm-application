@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.movealarm.app.R
 import com.movealarm.app.data.AlarmSettings
 import com.movealarm.app.data.PhotoOrder
+import com.movealarm.app.data.QuietPeriod
 import java.io.File
 
 @Composable
@@ -56,12 +57,10 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onChange: (AlarmSettings) -> Unit,
     onOpenPhotos: () -> Unit,
+    onOpenQuiet: () -> Unit,
     onTestAlarm: () -> Unit,
-    onFixNotifications: () -> Unit,
-    onFixExactAlarm: () -> Unit,
+    fixes: PermissionFixes,
 ) {
-    var editingQuiet by remember { mutableStateOf(false) }
-
     Column(Modifier.fillMaxSize().systemBarsPadding()) {
         TopBar(title = "무브알람", onBack = onBack) {
             Text(
@@ -96,7 +95,7 @@ fun SettingsScreen(
             HeroCard(settings)
             MinuteCard(settings.minute) { onChange(settings.copy(minute = it)) }
             PhotosCard(photos, settings.photoOrder, onOpenPhotos)
-            QuietCard(settings.quietStartHour, settings.quietEndHour) { editingQuiet = true }
+            QuietCard(settings.quietPeriods, onOpenQuiet)
 
             OutlinedButton(
                 onClick = onTestAlarm,
@@ -107,20 +106,8 @@ fun SettingsScreen(
                 Text("1분 뒤 테스트 알람 보내기", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = MoveColors.Accent)
             }
 
-            StatusFooter(settings, permissions, onFixNotifications, onFixExactAlarm)
+            StatusFooter(settings, permissions, fixes)
         }
-    }
-
-    if (editingQuiet) {
-        QuietHoursDialog(
-            initialStart = settings.quietStartHour,
-            initialEnd = settings.quietEndHour,
-            onDismiss = { editingQuiet = false },
-            onSave = { start, end ->
-                editingQuiet = false
-                onChange(settings.copy(quietStartHour = start, quietEndHour = end))
-            },
-        )
     }
 }
 
@@ -229,15 +216,14 @@ private fun PhotosCard(photos: List<File>, order: PhotoOrder, onOpen: () -> Unit
 }
 
 @Composable
-private fun QuietCard(start: Int, end: Int, onEdit: () -> Unit) {
-    MoveCard(onClick = onEdit) {
+private fun QuietCard(periods: List<QuietPeriod>, onOpen: () -> Unit) {
+    MoveCard(onClick = onOpen) {
         SectionLabel("무음 시간대", icon = R.drawable.ic_moon, trailing = "바꾸기 ›")
-        if (start == end) {
+        if (periods.isEmpty()) {
             Text("없음", fontFamily = Jua, fontSize = 32.sp, color = MoveColors.Ink)
-            Text("하루 종일 매시간 알람이 울려요", fontSize = 18.sp, color = MoveColors.Sub)
+            Text("매일 매시간 알람이 울려요", fontSize = 18.sp, color = MoveColors.Sub)
         } else {
-            Text("%02d:00 ~ %02d:00".format(start, end), fontFamily = Jua, fontSize = 32.sp, color = MoveColors.Ink)
-            QuietTrack(start, end)
+            periods.forEach { QuietPeriodSummary(it) }
             Text("이 시간엔 알람이 울리지 않아요", fontSize = 18.sp, color = MoveColors.Sub)
         }
     }
@@ -255,7 +241,11 @@ fun QuietTrack(start: Int, end: Int) {
                 val x1 = size.width * to / 24f
                 drawRoundRect(MoveColors.Accent, topLeft = Offset(x0, 0f), size = Size(x1 - x0, size.height), cornerRadius = radius)
             }
-            if (start < end) segment(start, end) else if (start > end) { segment(start, 24); segment(0, end) }
+            when {
+                start < end -> segment(start, end)
+                start > end -> { segment(start, 24); segment(0, end) }
+                else -> segment(0, 24)
+            }
         }
         Row(Modifier.fillMaxWidth()) {
             listOf("0시", "6시", "12시", "18시", "24시").forEachIndexed { i, label ->

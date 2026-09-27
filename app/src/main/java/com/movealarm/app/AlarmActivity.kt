@@ -30,6 +30,9 @@ class AlarmActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
+        // 잠금 화면의 짧은 화면 꺼짐 시간 때문에 사진을 보기도 전에 꺼지지 않도록 1분간 켜 둔다.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.decorView.postDelayed({ window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }, KEEP_SCREEN_ON_MS)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
@@ -69,6 +72,7 @@ class AlarmActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_PHOTO = "photo"
         private const val EXTRA_KIND = "kind"
+        private const val KEEP_SCREEN_ON_MS = 60_000L
 
         fun intent(context: Context, photoPath: String?, kind: AlarmKind): Intent =
             Intent(context, AlarmActivity::class.java)

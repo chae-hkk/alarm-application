@@ -8,8 +8,7 @@ enum class PhotoOrder { SEQUENTIAL, RANDOM }
 data class AlarmSettings(
     val enabled: Boolean = true,
     val minute: Int = 0,
-    val quietStartHour: Int = 22,
-    val quietEndHour: Int = 8,
+    val quietPeriods: List<QuietPeriod> = listOf(QuietPeriod(22, 8)),
     val photoOrder: PhotoOrder = PhotoOrder.SEQUENTIAL,
 )
 
@@ -23,8 +22,7 @@ class SettingsStore(context: Context) {
         return AlarmSettings(
             enabled = prefs.getBoolean(KEY_ENABLED, defaults.enabled),
             minute = prefs.getInt(KEY_MINUTE, defaults.minute).coerceIn(0, 59),
-            quietStartHour = prefs.getInt(KEY_QUIET_START, defaults.quietStartHour).coerceIn(0, 23),
-            quietEndHour = prefs.getInt(KEY_QUIET_END, defaults.quietEndHour).coerceIn(0, 23),
+            quietPeriods = loadQuietPeriods(defaults.quietPeriods),
             photoOrder = runCatching {
                 PhotoOrder.valueOf(prefs.getString(KEY_PHOTO_ORDER, null) ?: defaults.photoOrder.name)
             }.getOrDefault(defaults.photoOrder),
@@ -34,9 +32,17 @@ class SettingsStore(context: Context) {
     fun save(settings: AlarmSettings) = prefs.edit {
         putBoolean(KEY_ENABLED, settings.enabled)
         putInt(KEY_MINUTE, settings.minute)
-        putInt(KEY_QUIET_START, settings.quietStartHour)
-        putInt(KEY_QUIET_END, settings.quietEndHour)
+        putString(KEY_QUIET_PERIODS, QuietPeriod.encode(settings.quietPeriods))
         putString(KEY_PHOTO_ORDER, settings.photoOrder.name)
+    }
+
+    private fun loadQuietPeriods(defaults: List<QuietPeriod>): List<QuietPeriod> {
+        prefs.getString(KEY_QUIET_PERIODS, null)?.let { return QuietPeriod.decode(it) }
+        // 이전 버전(무음 시간 1개, 요일 없음) 설정을 "매일"로 옮긴다. 예전엔 시작=끝이 "무음 없음"이었다.
+        if (!prefs.contains(KEY_QUIET_START)) return defaults
+        val start = prefs.getInt(KEY_QUIET_START, 22).coerceIn(0, 23)
+        val end = prefs.getInt(KEY_QUIET_END, 8).coerceIn(0, 23)
+        return if (start == end) emptyList() else listOf(QuietPeriod(start, end))
     }
 
     var sequentialNextIndex: Int
@@ -77,6 +83,7 @@ class SettingsStore(context: Context) {
         const val KEY_MINUTE = "minute"
         const val KEY_QUIET_START = "quiet_start"
         const val KEY_QUIET_END = "quiet_end"
+        const val KEY_QUIET_PERIODS = "quiet_periods"
         const val KEY_PHOTO_ORDER = "photo_order"
         const val KEY_SEQ_NEXT = "seq_next"
         const val KEY_LAST_SHOWN = "last_shown"

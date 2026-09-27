@@ -38,9 +38,8 @@ private val DATE = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)
 fun HomeClockScreen(
     settings: AlarmSettings,
     permissions: PermissionState,
+    fixes: PermissionFixes,
     onOpenSettings: () -> Unit,
-    onFixNotifications: () -> Unit,
-    onFixExactAlarm: () -> Unit,
 ) {
     val now = rememberNow()
     Box(
@@ -81,17 +80,17 @@ fun HomeClockScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Icon(painterResource(R.drawable.ic_bell), contentDescription = null, tint = MoveColors.Ink, modifier = Modifier.size(26.dp))
-                        val label = if (settings.enabled) {
-                            val next = AlarmTimeCalculator.nextAlarm(now, settings.minute, settings.quietStartHour, settings.quietEndHour)
-                            "다음 알람 · ${formatNextAlarm(next, now)}"
-                        } else {
-                            "알람이 꺼져 있어요"
+                        val next = AlarmTimeCalculator.nextAlarm(now, settings.minute, settings.quietPeriods)
+                        val label = when {
+                            !settings.enabled -> "알람이 꺼져 있어요"
+                            next == null -> "울릴 시간이 없어요"
+                            else -> "다음 알람 · ${formatNextAlarm(next, now)}"
                         }
                         Text(label, fontSize = 23.sp, fontWeight = FontWeight.Bold, color = MoveColors.Ink)
                     }
                 }
             }
-            StatusFooter(settings, permissions, onFixNotifications, onFixExactAlarm)
+            StatusFooter(settings, permissions, fixes)
             VSpace(12.dp)
             BigButton("알람 설정하기", onClick = onOpenSettings, icon = R.drawable.ic_bell)
         }

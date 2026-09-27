@@ -1,26 +1,26 @@
 package com.movealarm.app.alarm
 
+import com.movealarm.app.data.QuietPeriod
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
 object AlarmTimeCalculator {
 
-    /** 무음 구간은 [startHour:00, endHour:00) 이며 자정을 넘길 수 있다. start == end 이면 무음 없음. */
-    fun isQuietHour(hour: Int, startHour: Int, endHour: Int): Boolean = when {
-        startHour == endHour -> false
-        startHour < endHour -> hour in startHour until endHour
-        else -> hour >= startHour || hour < endHour
-    }
+    // 요일 설정이 있으므로 일주일을 넘겨(8일) 찾아본다.
+    private const val SEARCH_HOURS = 24 * 8
 
-    /** now 보다 엄격하게 뒤에 있는, 무음 구간이 아닌 첫 번째 "매시 minute분" 시각. */
-    fun nextAlarm(now: ZonedDateTime, minute: Int, quietStartHour: Int, quietEndHour: Int): ZonedDateTime {
+    fun isQuiet(time: ZonedDateTime, periods: List<QuietPeriod>): Boolean =
+        periods.any { it.covers(time.toLocalDate(), time.hour) }
+
+    /** now 보다 엄격하게 뒤에 있는, 무음이 아닌 첫 번째 "매시 minute분". 일주일 내내 무음이면 null. */
+    fun nextAlarm(now: ZonedDateTime, minute: Int, periods: List<QuietPeriod>): ZonedDateTime? {
         require(minute in 0..59) { "minute must be 0..59: $minute" }
         var candidate = now.truncatedTo(ChronoUnit.HOURS).withMinute(minute)
         if (!candidate.isAfter(now)) candidate = candidate.plusHours(1)
-        repeat(24) {
-            if (!isQuietHour(candidate.hour, quietStartHour, quietEndHour)) return candidate
+        repeat(SEARCH_HOURS) {
+            if (!isQuiet(candidate, periods)) return candidate
             candidate = candidate.plusHours(1)
         }
-        return candidate
+        return null
     }
 }

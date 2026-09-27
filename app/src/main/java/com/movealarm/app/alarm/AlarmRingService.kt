@@ -46,7 +46,11 @@ class AlarmRingService : Service() {
         AlarmNotifier.ensureChannels(this)
         val prepared = AlarmNotifier.prepareContent(this, kind)
         content = prepared
-        val notification = AlarmNotifier.buildRinging(this, prepared, AlarmNotifier.shouldUseFullScreen(this))
+        val fullScreen = AlarmNotifier.shouldUseFullScreen(this)
+        if (fullScreen && !AlarmNotifier.canUseFullScreen(this)) {
+            SettingsStore(this).recordError("전체 화면 알림 권한이 꺼져 있어 잠금 화면에 알람 화면 대신 알림만 표시했어요")
+        }
+        val notification = AlarmNotifier.buildRinging(this, prepared, fullScreen)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(AlarmNotifier.NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)

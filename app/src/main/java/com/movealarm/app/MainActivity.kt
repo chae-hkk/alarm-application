@@ -39,14 +39,16 @@ import com.movealarm.app.photo.PhotoStore
 import com.movealarm.app.ui.HomeClockScreen
 import com.movealarm.app.ui.MoveColors
 import com.movealarm.app.ui.MoveTheme
+import com.movealarm.app.ui.PermissionFixes
 import com.movealarm.app.ui.PermissionState
 import com.movealarm.app.ui.PhotosScreen
+import com.movealarm.app.ui.QuietScreen
 import com.movealarm.app.ui.SettingsScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Screen { HOME, SETTINGS, PHOTOS }
+private enum class Screen { HOME, SETTINGS, PHOTOS, QUIET }
 
 class MainActivity : ComponentActivity() {
 
@@ -126,20 +128,24 @@ private fun MoveApp(resumeCount: Int) {
         AlarmScheduler.rescheduleHourly(context)
     }
 
-    val fixNotifications = { openNotificationSettings(context) }
-    val fixExactAlarm = { openExactAlarmSettings(context) }
+    val fixes = remember(context) {
+        PermissionFixes(
+            notifications = { openNotificationSettings(context) },
+            exactAlarm = { openExactAlarmSettings(context) },
+            fullScreen = { openFullScreenSettings(context) },
+        )
+    }
 
     BackHandler(enabled = screen != Screen.HOME) {
-        screen = if (screen == Screen.PHOTOS) Screen.SETTINGS else Screen.HOME
+        screen = if (screen == Screen.SETTINGS) Screen.HOME else Screen.SETTINGS
     }
 
     when (screen) {
         Screen.HOME -> HomeClockScreen(
             settings = settings,
             permissions = permissions,
+            fixes = fixes,
             onOpenSettings = { screen = Screen.SETTINGS },
-            onFixNotifications = fixNotifications,
-            onFixExactAlarm = fixExactAlarm,
         )
         Screen.SETTINGS -> SettingsScreen(
             settings = settings,
@@ -148,14 +154,14 @@ private fun MoveApp(resumeCount: Int) {
             onBack = { screen = Screen.HOME },
             onChange = ::update,
             onOpenPhotos = { screen = Screen.PHOTOS },
+            onOpenQuiet = { screen = Screen.QUIET },
             onTestAlarm = {
                 AlarmScheduler.scheduleTest(context)
                 val msg = if (permissions.notificationsAllowed) "1분 뒤에 테스트 알람이 울려요.\n화면을 끄고 기다려 보세요."
                 else "알림이 꺼져 있어서 테스트 알람이 보이지 않아요. 아래 안내를 눌러 알림을 켜주세요."
                 Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             },
-            onFixNotifications = fixNotifications,
-            onFixExactAlarm = fixExactAlarm,
+            fixes = fixes,
         )
         Screen.PHOTOS -> PhotosScreen(
             photos = photos,
@@ -170,6 +176,11 @@ private fun MoveApp(resumeCount: Int) {
             },
             onOrderChange = { update(settings.copy(photoOrder = it)) },
         )
+        Screen.QUIET -> QuietScreen(
+            periods = settings.quietPeriods,
+            onBack = { screen = Screen.SETTINGS },
+            onChange = { update(settings.copy(quietPeriods = it)) },
+        )
     }
 }
 
@@ -178,6 +189,7 @@ private const val MAX_PICK = 10
 private fun readPermissions(context: Context) = PermissionState(
     notificationsAllowed = AlarmNotifier.canPostNotifications(context),
     exactAlarmAllowed = AlarmScheduler.canScheduleExact(context),
+    fullScreenAllowed = AlarmNotifier.canUseFullScreen(context),
 )
 
 private fun openNotificationSettings(context: Context) {
@@ -189,6 +201,15 @@ private fun openNotificationSettings(context: Context) {
 private fun openExactAlarmSettings(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))
+        runCatching { context.startActivity(intent) }.onFailure { openAppDetails(context) }
+    } else {
+        openAppDetails(context)
+    }
+}
+
+private fun openFullScreenSettings(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))
         runCatching { context.startActivity(intent) }.onFailure { openAppDetails(context) }
     } else {
         openAppDetails(context)

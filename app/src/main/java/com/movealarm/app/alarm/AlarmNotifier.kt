@@ -97,6 +97,11 @@ object AlarmNotifier {
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
+    /** Android 14+ 에서는 "전체 화면 알림" 권한이 꺼져 있으면 알람 화면 대신 알림만 뜬다. */
+    fun canUseFullScreen(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+
     fun shouldUseFullScreen(context: Context): Boolean {
         val screenOn = context.getSystemService(PowerManager::class.java).isInteractive
         val locked = context.getSystemService(KeyguardManager::class.java).isKeyguardLocked

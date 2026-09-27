@@ -17,27 +17,40 @@ import androidx.compose.ui.unit.sp
 import com.movealarm.app.alarm.AlarmTimeCalculator
 import com.movealarm.app.data.AlarmSettings
 
-data class PermissionState(val notificationsAllowed: Boolean, val exactAlarmAllowed: Boolean)
+data class PermissionState(
+    val notificationsAllowed: Boolean,
+    val exactAlarmAllowed: Boolean,
+    val fullScreenAllowed: Boolean,
+)
+
+/** 권한이 꺼져 있을 때 해당 설정 화면을 여는 동작들 */
+data class PermissionFixes(
+    val notifications: () -> Unit,
+    val exactAlarm: () -> Unit,
+    val fullScreen: () -> Unit,
+)
 
 @Composable
 fun StatusFooter(
     settings: AlarmSettings,
     permissions: PermissionState,
-    onFixNotifications: () -> Unit,
-    onFixExactAlarm: () -> Unit,
+    fixes: PermissionFixes,
     modifier: Modifier = Modifier,
 ) {
     val now = rememberNow()
     val (dot, text, onClick) = when {
         !permissions.notificationsAllowed ->
-            Triple(MoveColors.Accent, "알림이 꺼져 있어요 · 여기를 눌러 켜주세요", onFixNotifications)
+            Triple(MoveColors.Accent, "알림이 꺼져 있어요 · 여기를 눌러 켜주세요", fixes.notifications)
         !settings.enabled ->
             Triple(MoveColors.OffDot, "알람이 꺼져 있어요", null)
         !permissions.exactAlarmAllowed ->
-            Triple(MoveColors.Accent, "정확한 알람 허용이 필요해요 · 여기를 눌러주세요", onFixExactAlarm)
+            Triple(MoveColors.Accent, "정확한 알람 허용이 필요해요 · 여기를 눌러주세요", fixes.exactAlarm)
+        !permissions.fullScreenAllowed ->
+            Triple(MoveColors.Accent, "잠금 화면 알람 허용이 필요해요 · 여기를 눌러주세요", fixes.fullScreen)
         else -> {
-            val next = AlarmTimeCalculator.nextAlarm(now, settings.minute, settings.quietStartHour, settings.quietEndHour)
-            Triple(MoveColors.Ok, "정상 작동 중 · 다음 알람 ${formatNextAlarm(next, now)}", null)
+            val next = AlarmTimeCalculator.nextAlarm(now, settings.minute, settings.quietPeriods)
+            if (next == null) Triple(MoveColors.Accent, "모든 시간이 무음이라 알람이 울리지 않아요", null)
+            else Triple(MoveColors.Ok, "정상 작동 중 · 다음 알람 ${formatNextAlarm(next, now)}", null)
         }
     }
     Row(

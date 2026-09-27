@@ -27,7 +27,13 @@ object AlarmScheduler {
             store.clearNextAlarm()
             return null
         }
-        val next = AlarmTimeCalculator.nextAlarm(from, settings.minute, settings.quietStartHour, settings.quietEndHour)
+        val next = AlarmTimeCalculator.nextAlarm(from, settings.minute, settings.quietPeriods)
+        if (next == null) {
+            alarmManager(context).cancel(pi)
+            store.clearNextAlarm()
+            store.recordError("모든 시간이 무음으로 설정돼 있어 알람이 울릴 시간이 없어요")
+            return null
+        }
         val at = next.toInstant().toEpochMilli()
         setExact(context, store, at, pi)
         store.recordScheduled(at)
